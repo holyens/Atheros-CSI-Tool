@@ -156,7 +156,7 @@ ar9003_set_txdesc(struct ath_hw *ah, void *ds, struct ath_tx_info *i)
 	ACCESS_ONCE(ads->ctl20) = SM(i->txpower[1], AR_XmitPower1);
 	ACCESS_ONCE(ads->ctl21) = SM(i->txpower[2], AR_XmitPower2);
 	ACCESS_ONCE(ads->ctl22) = SM(i->txpower[3], AR_XmitPower3);
-
+    printk(KERN_DEBUG"loctag-ar9003_mac: 0x%08x, 0x%08x\n" ,ads->ctl13, ads->ctl14);
     rate1 = (ads->ctl14 >> 24) & 0xff;
     rate2 = (ads->ctl14 >> 16) & 0xff;
     rate3 = (ads->ctl14 >> 8)  & 0xff;

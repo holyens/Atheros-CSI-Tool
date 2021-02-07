@@ -676,6 +676,8 @@ enum mac80211_tx_info_flags {
 enum mac80211_tx_control_flags {
 	IEEE80211_TX_CTRL_PORT_CTRL_PROTO	= BIT(0),
 	IEEE80211_TX_CTRL_PS_RESPONSE		= BIT(1),
+	IEEE80211_TX_CTRL_RATE_INJECT		= BIT(2),
+	IEEE80211_TX_CTRL_AMSDU			= BIT(3),
 };
 
 /*
