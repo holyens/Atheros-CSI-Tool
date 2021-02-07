@@ -152,8 +152,6 @@ static void ath_set_rates(struct ieee80211_vif *vif, struct ieee80211_sta *sta,
 	struct ieee80211_tx_rate *rates = bf->rates;
         ieee80211_get_tx_rates(vif, sta, bf->bf_mpdu, bf->rates,
 			       ARRAY_SIZE(bf->rates));
-        printk(KERN_DEBUG"loctag-xmit %lu: %d/%d-%x; %d/%d-%x; %d/%d-%x; %d/%d-%x\n", ARRAY_SIZE(bf->rates), rates[0].idx,rates[0].count,rates[0].flags,  rates[1].idx,rates[1].count,rates[1].flags,\
-                         rates[2].idx,rates[2].count,rates[2].flags, rates[3].idx,rates[3].count,rates[3].flags);
 }
 
 static void ath_txq_skb_done(struct ath_softc *sc, struct ath_txq *txq,
