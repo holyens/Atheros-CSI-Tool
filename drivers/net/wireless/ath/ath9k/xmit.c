@@ -149,7 +149,6 @@ static void ath_send_bar(struct ath_atx_tid *tid, u16 seqno)
 static void ath_set_rates(struct ieee80211_vif *vif, struct ieee80211_sta *sta,
 			  struct ath_buf *bf)
 {
-	struct ieee80211_tx_rate *rates = bf->rates;
         ieee80211_get_tx_rates(vif, sta, bf->bf_mpdu, bf->rates,
 			       ARRAY_SIZE(bf->rates));
 }
