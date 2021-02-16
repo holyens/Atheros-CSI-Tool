@@ -170,6 +170,7 @@ static ssize_t csi_read(struct file *file, char __user *user_buf,
         wait_event_interruptible_timeout(csi_queue,csi_head != csi_tail,  5*HZ);
     } 
     if(csi_head != csi_tail){
+        printk("loctag-read: %d\n", csi_head);
         csi = (struct ath9k_csi*)&csi_buf[csi_tail];
         len = 0;
         
@@ -221,7 +222,7 @@ void csi_record_payload(void* data, u_int16_t data_len)
     {
         if( ((csi_head + 1) & 0x0000000F) == csi_tail)              // check and update 
             csi_tail = (csi_tail + 1) & 0x0000000F;
-        
+        printk("loctag-payload: h: %d, valid: %d, [24]: %d\n", csi_head, csi_valid, ((u_int8_t*)data)[24]);
         csi = (struct ath9k_csi*)&csi_buf[csi_head];
         memcpy((void*)(csi->payload_buf),data, data_len);           // copy the payload
         csi->payload_len = data_len;                                // record the payload length (bytes)
@@ -250,7 +251,7 @@ void csi_record_status(struct ath_hw *ah, struct ath_rx_status *rxs, struct ar90
                 rx_hw_upload_data_valid == 0 && rx_hw_upload_data_type == 0){
         return;
     }
-
+    printk("loctag-status: h: %d, valid: %d\n", csi_head, csi_valid);
     if(recording && csi_valid == 1)
     {
         csi = (struct ath9k_csi*)&csi_buf[csi_head];
