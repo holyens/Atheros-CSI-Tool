@@ -609,8 +609,8 @@ int ath9k_hw_process_rxdesc_edma(struct ath_hw *ah, struct ath_rx_status *rxs,
     data_len = rxs->rs_datalen;
     data_addr = buf_addr + 48;
     rx_hw_upload_data_type = (rxsp->status11>>25)&0x03;
-    if (rxs->rs_rate>=0x80 || rx_hw_upload_data_type || rxs->rs_more)
-    	printk("loctag: CRCErr:%d, rs_more: %d, rs_rate: 0x%02x, %d, %d, %02x\n", rxsp->status11 & AR_CRCErr, rxs->rs_more, rxs->rs_rate, rx_hw_upload_data_type, data_len, ((u8*)data_addr)[24]);
+    //if (rxs->rs_rate>=0x80 || rx_hw_upload_data_type || rxs->rs_more)
+    //	printk("loctag: CRCErr:%d, rs_more: %d, rs_rate: 0x%02x, %d, %d, %02x\n", rxsp->status11 & AR_CRCErr, rxs->rs_more, rxs->rs_rate, rx_hw_upload_data_type, data_len, ((u8*)data_addr)[24]);
     if (rxsp->status11 & AR_CRCErr){
         if (rxs->rs_rate >= 0x80){
             csi_record_payload(data_addr,data_len);

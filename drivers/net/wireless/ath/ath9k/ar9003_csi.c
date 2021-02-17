@@ -14,11 +14,14 @@
  */
 
 #include <linux/module.h>
+#include <linux/moduleparam.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
 #include <linux/fs.h>
 #include <linux/wait.h>
 #include <linux/netdevice.h>
+#include <linux/stat.h>
+#include <linux/string.h>
 
 #include "ar9003_csi.h"
 #include "ar9003_mac.h"
@@ -40,6 +43,14 @@
 #define AH_MAX_CHAINS   3                     //maximum chain number, we set it to 3
 #define NUM_OF_CHAINMASK (1 << AH_MAX_CHAINS)
 
+static int          isFilter = 1;
+static char *       filter_str = "B4:EE:B4:B7:0B:3C";
+static u8           filter_addr2[6] = "\xB4\xEE\xB4\xB7\x0B\x3C";
+
+module_param(isFilter, int, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+MODULE_PARM_DESC(isFilter, "Whether to open filter");
+module_param(filter_str, charp,  S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+MODULE_PARM_DESC(filter_str, "802.11 addr2");
 
 volatile u32        csi_head;
 volatile u32        csi_tail;
@@ -90,13 +101,26 @@ u_int8_t ar9300_get_nrx_csi(struct ath_hw *ah)
 
 static int __init csi_init(void)
 {
-
+    int i, tmp;
+    char buf[20];
     // initalize parameters 
     csi_head    = 0;
     csi_tail    = 0;
     recording   = 0;
     csi_valid   = 0;
-    
+    if (isFilter) {
+        strncpy(buf, filter_str, 20);
+        buf[2] = buf[5] = buf[8] = buf[11] = buf[14] = '\0';
+        for (i=0; i<6; i++) {
+            if (kstrtoint(buf+i*3, 16, &tmp)) {
+                printk("debug_csi: failed to parse parameter: %s\n", filter_str);
+                return -1;
+            }
+            filter_addr2[i] = (u8)tmp;
+        }
+    }
+    printk("debug_csi: init: isFilter=%d, filter_addr2=%02x:%02x:%02x:%02x:%02x:%02x\n",isFilter, \
+            filter_addr2[0], filter_addr2[1],filter_addr2[2],filter_addr2[3],filter_addr2[4],filter_addr2[5]);
     // Try to dynamically allocate a major number for the device -- more difficult but worth it
     majorNumber = register_chrdev(0, DEVICE_NAME, &csi_fops);
     if (majorNumber<0){
@@ -170,7 +194,7 @@ static ssize_t csi_read(struct file *file, char __user *user_buf,
         wait_event_interruptible_timeout(csi_queue,csi_head != csi_tail,  5*HZ);
     } 
     if(csi_head != csi_tail){
-        printk("loctag-read: %d\n", csi_head);
+        // printk("loctag-read: %d\n", csi_head);
         csi = (struct ath9k_csi*)&csi_buf[csi_tail];
         len = 0;
         
@@ -220,9 +244,11 @@ void csi_record_payload(void* data, u_int16_t data_len)
     struct ath9k_csi* csi;
     if(recording )
     {
+        if(isFilter && memcmp(data+10, filter_addr2, 6))
+            return;
         if( ((csi_head + 1) & 0x0000000F) == csi_tail)              // check and update 
             csi_tail = (csi_tail + 1) & 0x0000000F;
-        printk("loctag-payload: h: %d, valid: %d, [24]: %d\n", csi_head, csi_valid, ((u_int8_t*)data)[24]);
+        // printk("loctag-payload: h: %d, valid: %d, [24]: %d\n", csi_head, csi_valid, ((u_int8_t*)data)[24]);
         csi = (struct ath9k_csi*)&csi_buf[csi_head];
         memcpy((void*)(csi->payload_buf),data, data_len);           // copy the payload
         csi->payload_len = data_len;                                // record the payload length (bytes)
@@ -251,7 +277,7 @@ void csi_record_status(struct ath_hw *ah, struct ath_rx_status *rxs, struct ar90
                 rx_hw_upload_data_valid == 0 && rx_hw_upload_data_type == 0){
         return;
     }
-    printk("loctag-status: h: %d, valid: %d\n", csi_head, csi_valid);
+    // printk("loctag-status: h: %d, valid: %d\n", csi_head, csi_valid);
     if(recording && csi_valid == 1)
     {
         csi = (struct ath9k_csi*)&csi_buf[csi_head];
