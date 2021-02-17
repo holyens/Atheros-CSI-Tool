@@ -234,12 +234,13 @@ static ssize_t csi_write(struct file *file, const char __user *user_buf,
                     isFilter, filter_addr2[0], filter_addr2[1],filter_addr2[2],filter_addr2[3],filter_addr2[4],filter_addr2[5]);
             }
             return 8;
-        case CMD_SET_TXPOWER:
+        case CMD_SET_TXPOWER: // NOTE: cmd invalid
             if (count-1 >=2) {
                 ar9003_csi_txpower_fixed = user_buf[1]? 1 : 0;
                 ar9003_csi_txpower = user_buf[2]&0x3f;
                 printk("debug_csi: CMD_SET_TXPOWER: txpower_fixed=%d, txpower=%d\n", ar9003_csi_txpower_fixed, ar9003_csi_txpower);
             }
+            return 3;
         default:
             printk(KERN_ALERT "debug_csi: unknown csi write cmd!\n");
             return 0;
