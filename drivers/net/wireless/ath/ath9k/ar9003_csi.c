@@ -45,6 +45,10 @@
 
 static int          isFilter = 1;
 static u8           filter_addr2[6] = {0};
+int                 ar9003_csi_txpower_fixed = 0;
+int                 ar9003_csi_txpower = 0x3f;
+EXPORT_SYMBOL(ar9003_csi_txpower_fixed);
+EXPORT_SYMBOL(ar9003_csi_txpower);
 
 volatile u32        csi_head;
 volatile u32        csi_tail;
@@ -101,6 +105,8 @@ static int __init csi_init(void)
     recording   = 0;
     csi_valid   = 0;
 
+    ar9003_csi_txpower_fixed = 0;
+    ar9003_csi_txpower = 0x3f;
     printk("debug_csi: init: isFilter=%d, filter_addr2=%02x:%02x:%02x:%02x:%02x:%02x\n",isFilter, \
             filter_addr2[0], filter_addr2[1],filter_addr2[2],filter_addr2[3],filter_addr2[4],filter_addr2[5]);
     // Try to dynamically allocate a major number for the device -- more difficult but worth it
@@ -221,13 +227,19 @@ static ssize_t csi_write(struct file *file, const char __user *user_buf,
         return -1;
     switch (user_buf[0]) {
         case CMD_SET_FILTER:
-            if (count-2 >=6) {
-                isFilter = user_buf? 1 : 0;
+            if (count-1 >=7) {
+                isFilter = user_buf[1]? 1 : 0;
                 memcpy(filter_addr2, user_buf+2, 6);
                 printk("debug_csi: CMD_SET_FILTER: isFilter=%d, filter_addr2=%02x:%02x:%02x:%02x:%02x:%02x\n",
                     isFilter, filter_addr2[0], filter_addr2[1],filter_addr2[2],filter_addr2[3],filter_addr2[4],filter_addr2[5]);
             }
             return 8;
+        case CMD_SET_TXPOWER:
+            if (count-1 >=2) {
+                ar9003_csi_txpower_fixed = user_buf[1]? 1 : 0;
+                ar9003_csi_txpower = user_buf[2]&0x3f;
+                printk("debug_csi: CMD_SET_TXPOWER: txpower_fixed=%d, txpower=%d\n", ar9003_csi_txpower_fixed, ar9003_csi_txpower);
+            }
         default:
             printk(KERN_ALERT "debug_csi: unknown csi write cmd!\n");
             return 0;

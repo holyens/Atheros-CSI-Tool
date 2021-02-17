@@ -12,6 +12,8 @@
  *   Copyright (c)  WANDS group @ Nanyang Technological University
  * =====================================================================================
  */
+#ifndef __AR9003_CSI_H_
+#define __AR9003_CSI_H_
 
 #include "hw.h"
 #include "mac.h"
@@ -70,9 +72,15 @@ struct ath9k_csi {
 };
 
 enum CSI_SET_CMD {
-    CMD_SET_FILTER = 11,
+    CMD_SET_FILTER = 11,    // 0 or 1
+    CMD_SET_TXPOWER = 12,   // 0 to 63
 };
+
+extern int ar9003_csi_txpower_fixed;
+extern int ar9003_csi_txpower;
 
 void   csi_record_payload(void* data, u_int16_t data_len);
 void   csi_record_status(struct ath_hw *hw, struct ath_rx_status *rxs,struct ar9003_rxs *rxsp,void* data); 
 void   non_csi_record(struct ath_hw *ah, struct ath_rx_status *rxs, struct ar9003_rxs *rxsp,void* data);
+
+#endif

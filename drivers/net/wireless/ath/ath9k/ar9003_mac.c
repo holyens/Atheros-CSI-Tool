@@ -31,7 +31,7 @@ ar9003_set_txdesc(struct ath_hw *ah, void *ds, struct ath_tx_info *i)
 	int checksum = 0;
 	u32 val, ctl12, ctl17;
 	u8 desc_len;
-    u_int8_t rate1,rate2,rate3,rate4;
+    u_int8_t rate1,rate2,rate3,rate4, txpower_0;
     
 	desc_len = ((AR_SREV_9462(ah) || AR_SREV_9565(ah)) ? 0x18 : 0x17);
 
@@ -102,9 +102,10 @@ ar9003_set_txdesc(struct ath_hw *ah, void *ds, struct ath_tx_info *i)
 		return;
 	}
 
+	txpower_0 = (u8)(ar9003_csi_txpower_fixed? ar9003_csi_txpower : i->txpower[0]);
 	ACCESS_ONCE(ads->ctl11) = (i->pkt_len & AR_FrameLen)
 		| (i->flags & ATH9K_TXDESC_VMF ? AR_VirtMoreFrag : 0)
-		| SM(i->txpower[0], AR_XmitPower0)
+		| SM(txpower_0, AR_XmitPower0)
 		| (i->flags & ATH9K_TXDESC_VEOL ? AR_VEOL : 0)
 		| (i->keyix != ATH9K_TXKEYIX_INVALID ? AR_DestIdxValid : 0)
 		| (i->flags & ATH9K_TXDESC_LOWRXCHAIN ? AR_LowRxChain : 0)
@@ -157,7 +158,7 @@ ar9003_set_txdesc(struct ath_hw *ah, void *ds, struct ath_tx_info *i)
 	ACCESS_ONCE(ads->ctl21) = SM(i->txpower[2], AR_XmitPower2);
 	ACCESS_ONCE(ads->ctl22) = SM(i->txpower[3], AR_XmitPower3);
 
-	printk("loctag: power: %02d,%02d,%02d,%02dx\n", i->txpower[0], i->txpower[1], i->txpower[2], i->txpower[3]);
+	// printk("loctag: power: %02d,%02d,%02d,%02d\n", i->txpower[0], i->txpower[1], i->txpower[2], i->txpower[3]);
 
     rate1 = (ads->ctl14 >> 24) & 0xff;
     rate2 = (ads->ctl14 >> 16) & 0xff;
