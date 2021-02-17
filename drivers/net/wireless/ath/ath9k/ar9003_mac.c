@@ -157,6 +157,8 @@ ar9003_set_txdesc(struct ath_hw *ah, void *ds, struct ath_tx_info *i)
 	ACCESS_ONCE(ads->ctl21) = SM(i->txpower[2], AR_XmitPower2);
 	ACCESS_ONCE(ads->ctl22) = SM(i->txpower[3], AR_XmitPower3);
 
+	printk("loctag: power: %02d,%02d,%02d,%02dx\n", i->txpower[0], i->txpower[1], i->txpower[2], i->txpower[3]);
+
     rate1 = (ads->ctl14 >> 24) & 0xff;
     rate2 = (ads->ctl14 >> 16) & 0xff;
     rate3 = (ads->ctl14 >> 8)  & 0xff;

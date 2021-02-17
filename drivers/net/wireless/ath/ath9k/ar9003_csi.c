@@ -44,7 +44,7 @@
 #define NUM_OF_CHAINMASK (1 << AH_MAX_CHAINS)
 
 static int          isFilter = 1;
-static char         filter_addr2[6] = {0};
+static u8           filter_addr2[6] = {0};
 
 volatile u32        csi_head;
 volatile u32        csi_tail;
@@ -295,12 +295,7 @@ void csi_record_status(struct ath_hw *ah, struct ath_rx_status *rxs, struct ar90
         
         csi->pkt_status.noise     = 0;                  // to be updated
         csi->pkt_status.rate      = rxs->rs_rate;       // data rate 
-        
-        rx_hw_upload_data         = (rxsp->status2 & AR_hw_upload_data) ? 1 : 0;
-        rx_not_sounding           = (rxsp->status4 & AR_rx_not_sounding) ? 1 : 0;
-        rx_hw_upload_data_valid   = (rxsp->status4 & AR_hw_upload_data_valid) ? 1 : 0;
-        rx_hw_upload_data_type    = MS(rxsp->status11, AR_hw_upload_data_type);
-        
+                
         // Decides how many tones(subcarriers) are used according to the channel bandwidth
         if (chan_BW == 0){
             csi->pkt_status.num_tones = 56;             // 20MHz Channel
@@ -344,10 +339,6 @@ void non_csi_record(struct ath_hw *ah, struct ath_rx_status *rxs, struct ar9003_
 
     u_int8_t  nr;
     u_int8_t  chan_BW;
-    u_int8_t  rx_not_sounding;
-    u_int8_t  rx_hw_upload_data;
-    u_int8_t  rx_hw_upload_data_valid;
-    u_int8_t  rx_hw_upload_data_type;
 
     if(recording )
     {
@@ -376,13 +367,10 @@ void non_csi_record(struct ath_hw *ah, struct ath_rx_status *rxs, struct ar9003_
         csi->pkt_status.rssi_ctl1 = rxs->rs_rssi_ctl[1];
         csi->pkt_status.rssi_ctl2 = rxs->rs_rssi_ctl[2];
         
-        csi->pkt_status.noise     = 0;                  // to be updated
+        // csi->pkt_status.noise     = 0;                  // to be updated
+        // noise is not used, in order not to add a field, we borrow noise to record CRCErr
+        csi->pkt_status.noise     = (rxsp->status11 & AR_CRCErr)? 1 : 0;
         csi->pkt_status.rate      = rxs->rs_rate;       // data rate 
-        
-        rx_hw_upload_data         = (rxsp->status2 & AR_hw_upload_data) ? 1 : 0;
-        rx_not_sounding           = (rxsp->status4 & AR_rx_not_sounding) ? 1 : 0;
-        rx_hw_upload_data_valid   = (rxsp->status4 & AR_hw_upload_data_valid) ? 1 : 0;
-        rx_hw_upload_data_type    = MS(rxsp->status11, AR_hw_upload_data_type);
         
         // Decides how many tones(subcarriers) are used according to the channel bandwidth
         if (chan_BW == 0){
