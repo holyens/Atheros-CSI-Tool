@@ -305,7 +305,9 @@ void csi_record_status(struct ath_hw *ah, struct ath_rx_status *rxs, struct ar90
         csi->pkt_status.rssi_ctl1 = rxs->rs_rssi_ctl[1];
         csi->pkt_status.rssi_ctl2 = rxs->rs_rssi_ctl[2];
         
-        csi->pkt_status.noise     = 0;                  // to be updated
+        // csi->pkt_status.noise     = 0;                  // to be updated
+        // noise is not used, in order not to add a field, we borrow noise to record CRCErr
+        csi->pkt_status.noise     = (rxsp->status11 & AR_CRCErr)? 1 : 0;
         csi->pkt_status.rate      = rxs->rs_rate;       // data rate 
                 
         // Decides how many tones(subcarriers) are used according to the channel bandwidth
