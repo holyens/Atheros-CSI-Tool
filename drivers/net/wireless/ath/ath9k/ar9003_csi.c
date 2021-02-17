@@ -44,13 +44,7 @@
 #define NUM_OF_CHAINMASK (1 << AH_MAX_CHAINS)
 
 static int          isFilter = 1;
-static char *       filter_str = "B4:EE:B4:B7:0B:3C";
-static u8           filter_addr2[6] = "\xB4\xEE\xB4\xB7\x0B\x3C";
-
-module_param(isFilter, int, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-MODULE_PARM_DESC(isFilter, "Whether to open filter");
-module_param(filter_str, charp,  S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
-MODULE_PARM_DESC(filter_str, "802.11 addr2");
+static char         filter_addr2[6] = {0};
 
 volatile u32        csi_head;
 volatile u32        csi_tail;
@@ -101,24 +95,12 @@ u_int8_t ar9300_get_nrx_csi(struct ath_hw *ah)
 
 static int __init csi_init(void)
 {
-    int i, tmp;
-    char buf[20];
     // initalize parameters 
     csi_head    = 0;
     csi_tail    = 0;
     recording   = 0;
     csi_valid   = 0;
-    if (isFilter) {
-        strncpy(buf, filter_str, 20);
-        buf[2] = buf[5] = buf[8] = buf[11] = buf[14] = '\0';
-        for (i=0; i<6; i++) {
-            if (kstrtoint(buf+i*3, 16, &tmp)) {
-                printk("debug_csi: failed to parse parameter: %s\n", filter_str);
-                return -1;
-            }
-            filter_addr2[i] = (u8)tmp;
-        }
-    }
+
     printk("debug_csi: init: isFilter=%d, filter_addr2=%02x:%02x:%02x:%02x:%02x:%02x\n",isFilter, \
             filter_addr2[0], filter_addr2[1],filter_addr2[2],filter_addr2[3],filter_addr2[4],filter_addr2[5]);
     // Try to dynamically allocate a major number for the device -- more difficult but worth it
@@ -235,8 +217,21 @@ static ssize_t csi_read(struct file *file, char __user *user_buf,
 static ssize_t csi_write(struct file *file, const char __user *user_buf,
 			     size_t count, loff_t *ppos)
 {
-    printk(KERN_ALERT "debug_csi: csi write!\n");
-	return 0;
+    if (count<=0)
+        return -1;
+    switch (user_buf[0]) {
+        case CMD_SET_FILTER:
+            if (count-2 >=6) {
+                isFilter = user_buf? 1 : 0;
+                memcpy(filter_addr2, user_buf+2, 6);
+                printk("debug_csi: CMD_SET_FILTER: isFilter=%d, filter_addr2=%02x:%02x:%02x:%02x:%02x:%02x\n",
+                    isFilter, filter_addr2[0], filter_addr2[1],filter_addr2[2],filter_addr2[3],filter_addr2[4],filter_addr2[5]);
+            }
+            return 8;
+        default:
+            printk(KERN_ALERT "debug_csi: unknown csi write cmd!\n");
+            return 0;
+    }
 }
 
 void csi_record_payload(void* data, u_int16_t data_len)
