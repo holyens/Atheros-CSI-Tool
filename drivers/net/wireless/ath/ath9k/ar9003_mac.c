@@ -613,7 +613,7 @@ int ath9k_hw_process_rxdesc_edma(struct ath_hw *ah, struct ath_rx_status *rxs,
     //	printk("loctag: CRCErr:%d, rs_more: %d, rs_rate: 0x%02x, %d, %d, %02x\n", rxsp->status11 & AR_CRCErr, rxs->rs_more, rxs->rs_rate, rx_hw_upload_data_type, data_len, ((u8*)data_addr)[24]);
     
 	// If it is 11b packet, record and return
-	if (rxs->rs_rate == 0x1b && rxs->rs_more == 0) {
+	if (rxs->rs_rate == 0x1b && rxs->rs_more == 0 && (rxsp->status11 & AR_PHYErr)==0) {
 		non_csi_record(ah, rxs, rxsp, data_addr);
 		return 0;
 	}

@@ -351,7 +351,7 @@ void non_csi_record(struct ath_hw *ah, struct ath_rx_status *rxs, struct ar9003_
 
     if(recording )
     {
-        if(isFilter && memcmp(data+10, filter_addr2, 6))
+        if((isFilter && memcmp(data+10, filter_addr2, 6)) || rxs->rs_datalen<24)
             return;
         if( ((csi_head + 1) & 0x0000000F) == csi_tail)              // check and update 
             csi_tail = (csi_tail + 1) & 0x0000000F;
