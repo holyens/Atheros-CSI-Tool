@@ -611,12 +611,22 @@ int ath9k_hw_process_rxdesc_edma(struct ath_hw *ah, struct ath_rx_status *rxs,
     rx_hw_upload_data_type = (rxsp->status11>>25)&0x03;
     //if (rxs->rs_rate>=0x80 || rx_hw_upload_data_type || rxs->rs_more)
     //	printk("loctag: CRCErr:%d, rs_more: %d, rs_rate: 0x%02x, %d, %d, %02x\n", rxsp->status11 & AR_CRCErr, rxs->rs_more, rxs->rs_rate, rx_hw_upload_data_type, data_len, ((u8*)data_addr)[24]);
+    
+	// If it is 11b packet, record and return
+	if (rxs->rs_rate == 0x1b && rxs->rs_more == 0) {
+		non_csi_record(ah, rxs, rxsp, data_addr);
+		return 0;
+	}
+
     if (rxsp->status11 & AR_CRCErr){
         if (rxs->rs_rate >= 0x80){
             csi_record_payload(data_addr,data_len);
             csi_record_status(ah,rxs,rxsp,data_addr);
         }
     }else{
+		// For an incoming HT sounding packet, 
+		// the payload will be obtained the first time with rs_more=1, rs_rate=0; 
+		// and csi will be obtained the second time with rs_more=0, rs_rate>=0x80
         if  (rxs->rs_more == 1)
             csi_record_payload(data_addr,data_len);
 

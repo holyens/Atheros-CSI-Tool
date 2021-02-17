@@ -343,6 +343,80 @@ void csi_record_status(struct ath_hw *ah, struct ath_rx_status *rxs, struct ar90
 EXPORT_SYMBOL(csi_record_status);
 
 
+void non_csi_record(struct ath_hw *ah, struct ath_rx_status *rxs, struct ar9003_rxs *rxsp,void* data)
+{
+    struct ath9k_csi* csi;
+
+    u_int8_t  nr;
+    u_int8_t  chan_BW;
+    u_int8_t  rx_not_sounding;
+    u_int8_t  rx_hw_upload_data;
+    u_int8_t  rx_hw_upload_data_valid;
+    u_int8_t  rx_hw_upload_data_type;
+
+    if(recording )
+    {
+        if(isFilter && memcmp(data+10, filter_addr2, 6))
+            return;
+        if( ((csi_head + 1) & 0x0000000F) == csi_tail)              // check and update 
+            csi_tail = (csi_tail + 1) & 0x0000000F;
+        // printk("loctag-payload: h: %d, valid: %d, [24]: %d\n", csi_head, csi_valid, ((u_int8_t*)data)[24]);
+        csi = (struct ath9k_csi*)&csi_buf[csi_head];
+        memcpy((void*)(csi->payload_buf), data, rxs->rs_datalen);           // copy the payload
+        csi->payload_len = rxs->rs_datalen;                                // record the payload length (bytes)
+       
+        csi->pkt_status.tstamp    = rxs->rs_tstamp;     // time stamp of the rx packet 
+        
+        csi->pkt_status.channel   = ah->curchan->channel;               
+        
+        chan_BW                   = (rxsp->status4 & AR_2040) >> 1;        
+        csi->pkt_status.ChanBW    = chan_BW;            // channel bandwidth 
+        nr                        = ar9300_get_nrx_csi(ah);                    
+        csi->pkt_status.nr        = nr;                 // rx antennas number
+        
+        csi->pkt_status.phyerr    = rxs->rs_phyerr;     // PHY layer error code
+        
+        csi->pkt_status.rssi      = rxs->rs_rssi; 
+        csi->pkt_status.rssi_ctl0 = rxs->rs_rssi_ctl[0];            
+        csi->pkt_status.rssi_ctl1 = rxs->rs_rssi_ctl[1];
+        csi->pkt_status.rssi_ctl2 = rxs->rs_rssi_ctl[2];
+        
+        csi->pkt_status.noise     = 0;                  // to be updated
+        csi->pkt_status.rate      = rxs->rs_rate;       // data rate 
+        
+        rx_hw_upload_data         = (rxsp->status2 & AR_hw_upload_data) ? 1 : 0;
+        rx_not_sounding           = (rxsp->status4 & AR_rx_not_sounding) ? 1 : 0;
+        rx_hw_upload_data_valid   = (rxsp->status4 & AR_hw_upload_data_valid) ? 1 : 0;
+        rx_hw_upload_data_type    = MS(rxsp->status11, AR_hw_upload_data_type);
+        
+        // Decides how many tones(subcarriers) are used according to the channel bandwidth
+        if (chan_BW == 0){
+            csi->pkt_status.num_tones = 56;             // 20MHz Channel
+        }
+        else if (chan_BW == 1){
+            csi->pkt_status.num_tones = 114;            // 40MHz Channel
+        } 
+        else{
+            csi->pkt_status.num_tones = 56;             // 20MHz Channel
+            printk("Error happends for channel bandwidth recording!!\n");
+        }
+        
+        /* tx antennas number 
+         * NOTE: when the packet is received with error
+         * The antenna number value is not correct
+         */
+        csi->pkt_status.nc = (int) (rxs->rs_datalen * BITS_PER_BYTE) /
+                        (int) (BITS_PER_COMPLEX_SYMBOL * csi->pkt_status.nr * csi->pkt_status.num_tones);
+        /* non */
+        csi->pkt_status.csi_len = 0;
+                           
+        csi_head  = (csi_head + 1) & 0x0000000F;        // update 
+
+        wake_up_interruptible(&csi_queue);              // wake up waiting queue 
+    }
+}
+EXPORT_SYMBOL(non_csi_record);
+
 module_init(csi_init);
 module_exit(csi_exit);
 
